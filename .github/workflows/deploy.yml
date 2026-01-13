@@ -1,0 +1,54 @@
+name: Deploy to Aliyun
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Client Dependencies and Build
+      run: |
+        cd client
+        npm install
+        npm run build
+        # Remove node_modules to avoid copying them to server (we will install prod deps on server if needed, or serve static)
+        rm -rf node_modules
+
+    - name: Copy files to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.ALIYUN_HOST }}
+        username: ${{ secrets.ALIYUN_USER }}
+        key: ${{ secrets.ALIYUN_SSH_KEY }}
+        # If using password instead of key, use:
+        # password: ${{ secrets.ALIYUN_PASSWORD }}
+        source: "."
+        target: "/var/www/antigravity"
+        # strip_components: 1 # usage depends on need
+
+    - name: Deploy and Restart Server
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.ALIYUN_HOST }}
+        username: ${{ secrets.ALIYUN_USER }}
+        key: ${{ secrets.ALIYUN_SSH_KEY }}
+        # password: ${{ secrets.ALIYUN_PASSWORD }}
+        script: |
+          cd /var/www/antigravity/server
+          npm install --production
+          # Adjust the start command for your specific setup
+          # Example with PM2:
+          # pm2 describe antigravity-server > /dev/null && pm2 reload antigravity-server || pm2 start server.js --name antigravity-server
+          # For now, simple node restart or log:
+          echo "Deployment successful. Please configure your process manager (e.g., PM2) to restart the service."
