@@ -23,25 +23,36 @@
     </div>
 
     <!-- 导航标签栏 -->
-    <div class="flex gap-1 bg-stone-100/50 p-1 rounded-full">
+    <div class="flex items-center gap-4">
+      <div class="flex gap-1 bg-stone-100/50 p-1 rounded-full">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          @click="$emit('change-tab', tab.id)"
+          :class="[
+            'px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300',
+            currentTab === tab.id ? 'bg-white shadow-sm text-wood-light' : 'text-stone-400 hover:text-stone-600'
+          ]"
+        >
+          <component :is="tab.icon" class="w-4 h-4 inline-block mr-1 mb-0.5" />
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <!-- 登出按钮 -->
       <button 
-        v-for="tab in tabs" 
-        :key="tab.id"
-        @click="$emit('change-tab', tab.id)"
-        :class="[
-          'px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300',
-          currentTab === tab.id ? 'bg-white shadow-sm text-wood-light' : 'text-stone-400 hover:text-stone-600'
-        ]"
+        @click="$emit('logout')"
+        class="p-2 text-stone-400 hover:text-red-400 hover:bg-stone-50 rounded-full transition-colors"
+        title="退出登录"
       >
-        <component :is="tab.icon" class="w-4 h-4 inline-block mr-1 mb-0.5" />
-        {{ tab.label }}
+        <LogOutIcon class="w-5 h-5" />
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { HomeIcon, BookOpen, Utensils, ShoppingBag } from 'lucide-vue-next';
+import { HomeIcon, BookOpen, Utensils, ShoppingBag, LogOut as LogOutIcon } from 'lucide-vue-next';
 
 defineProps({
   user: {
@@ -54,7 +65,7 @@ defineProps({
   }
 });
 
-defineEmits(['change-tab']);
+defineEmits(['change-tab', 'logout']);
 
 // 侧边栏/顶部导航配置
 const tabs = [

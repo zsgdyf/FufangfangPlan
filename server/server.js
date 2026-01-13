@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { db, initDb } = require('./db');
@@ -22,6 +23,21 @@ const getStartOfWeek = () => {
 };
 
 // --- 路由接口 ---
+
+// 登录接口
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // 简单验证：查询数据库中匹配的用户
+    const user = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?').get(username, password);
+
+    if (user) {
+        // 登录成功，返回用户信息 (在实际生产中应返回 Token)
+        res.json({ success: true, user });
+    } else {
+        res.status(401).json({ error: '用户名或密码错误' });
+    }
+});
 
 // 获取用户信息
 app.get('/api/user', (req, res) => {

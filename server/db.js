@@ -14,11 +14,22 @@ function initDb () {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
+      username TEXT,
+      password TEXT,
       avatar TEXT,
       level INTEGER DEFAULT 1,
       current_exp INTEGER DEFAULT 0
     )
   `).run();
+
+  // 检查并添加缺失的字段 (username, password) - 用于旧数据库兼容
+  const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  if (!userColumns.includes('username')) {
+    db.prepare('ALTER TABLE users ADD COLUMN username TEXT').run();
+  }
+  if (!userColumns.includes('password')) {
+    db.prepare('ALTER TABLE users ADD COLUMN password TEXT').run();
+  }
 
   // 计划表：存储年度目标、书籍计划、饮食限制等
   // metadata 字段以 JSON 字符串形式存储额外信息（如封面图、具体限制：{limit: 2, period: 'weekly'}）
@@ -60,8 +71,22 @@ function initDb () {
 
   // 如果没有用户，插入初始测试用户
   const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+
+  // 从环境变量获取初始账号配置
+  const initUsername = process.env.INITIAL_USERNAME || 'admin';
+  const initPassword = process.env.INITIAL_PASSWORD || 'password';
+
   if (!user) {
-    db.prepare('INSERT INTO users (name, avatar, level, current_exp) VALUES (?, ?, ?, ?)').run('浮方方', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', 1, 0);
+    db.prepare('INSERT INTO users (name, username, password, avatar, level, current_exp) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(initUsername, initUsername, initPassword, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', 1, 0);
+  } else {
+    // 确保现有用户有用户名和密码
+    if (!user.username || !user.password) {
+      // 如果已存在且未设置，则更新
+      // 注意：此处仅为了演示方便直接覆盖，实际使用中可能需要更谨慎的迁移策略
+      db.prepare('UPDATE users SET username = ?, password = ? WHERE id = 1')
+        .run(initUsername, initPassword);
+    }
   }
 }
 
