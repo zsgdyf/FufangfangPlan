@@ -1,10 +1,9 @@
 <template>
   <!-- 主布局容器 -->
-  <div class="h-screen w-screen flex flex-col bg-[#FDFBF7] text-stone-700 font-sans overflow-hidden">
-    
+  <div class="app-container">
     <!-- 加载中状态 -->
-    <div v-if="isLoading" class="flex-1 flex items-center justify-center">
-      <div class="animate-pulse text-soft-pink text-xl font-bold">正在加载系统...</div>
+    <div v-if="isLoading" class="loading-screen">
+      <div class="loading-text">正在加载系统...</div>
     </div>
 
     <!-- 登录界面 -->
@@ -20,8 +19,8 @@
         @logout="handleLogout"
       />
       
-      <!-- 内容主区域：根据当前标签动态切换组件 -->
-      <main class="flex-1 overflow-hidden relative">
+      <!-- 内容主区域 -->
+      <main class="main-content">
         <transition name="fade" mode="out-in">
           <component 
             :is="currentViewComponent" 
@@ -49,7 +48,7 @@ const user = ref(null);
 const currentTab = ref('home');
 const isLoading = ref(true);
 
-// 根据选择的 Tab 计算对应的显示组件
+// 根据 Tab 计算显示组件
 const currentViewComponent = computed(() => {
   switch (currentTab.value) {
     case 'home': return HomeView;
@@ -60,14 +59,13 @@ const currentViewComponent = computed(() => {
   }
 });
 
-// 处理登录成功
+// 登录成功
 const handleLoginSuccess = (userData) => {
   user.value = userData;
-  // 持久化存储用户信息（或Token，此处为演示简单存User对象）
   localStorage.setItem('user', JSON.stringify(userData));
 };
 
-// 处理登出
+// 登出
 const handleLogout = () => {
   user.value = null;
   localStorage.removeItem('user');
@@ -75,12 +73,11 @@ const handleLogout = () => {
   currentTab.value = 'home';
 };
 
-// 从 API 获取用户信息 (用于刷新数据)
+// 获取用户信息
 const fetchUser = async () => {
   try {
     const res = await api.get('/user');
     user.value = res.data;
-    // 更新本地存储
     localStorage.setItem('user', JSON.stringify(res.data));
   } catch (e) {
     console.error("无法获取用户信息", e);
@@ -88,27 +85,61 @@ const fetchUser = async () => {
 };
 
 onMounted(async () => {
-  // 检查本地是否有保存的登录信息
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     try {
-      // 尝试解析本地数据
       user.value = JSON.parse(storedUser);
-      // 后台静默刷新一次最新数据
       await fetchUser();
     } catch (e) {
       console.error("本地数据解析失败", e);
       localStorage.removeItem('user');
     }
   }
-  
-  // 无论是否登录，加载完成
   isLoading.value = false;
 });
 </script>
 
 <style>
-/* 切换视图时的渐变效果 */
+/* ==================== 应用容器 ==================== */
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background-color: #FDFBF7;
+  color: #44403c;
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ==================== 加载状态 ==================== */
+.loading-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-text {
+  color: #fce7f3;
+  font-size: 1.25rem;
+  font-weight: 700;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ==================== 主内容区 ==================== */
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ==================== 页面切换动画 ==================== */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
